@@ -5,9 +5,9 @@ Created on Jul 5, 2013
 
 @author: yzhang28
 '''
-
-import numpy as np
 import scipy as sp
+import numpy as np
+
 from scipy.misc import factorial
 import math
 import matplotlib.pyplot as plt
