@@ -5,9 +5,9 @@ Created on Jul 5, 2013
 
 @author: yzhang28
 '''
-import scipy as sp
-import numpy as np
 
+import numpy as np
+import scipy as sp
 from scipy.misc import factorial
 import math
 import matplotlib.pyplot as plt
@@ -121,9 +121,9 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
         if 0==N or 0.0==eta_CONST:
             return 2**256 # NO WAY TO OFFLOAD SINCE N==0
         if 1==act: # Remote execution
-			return (1.0+((1.0-eta_CONST)**N)*penalty_input)*BaseCostG(G) #The second term is Penalty
-            # print 'NOTE THAT COST OF OFFLOADING HAS CHANGED'
-            # return (10.0+((1.0-eta_CONST)**N)*penalty_input)*BaseCostG(G) #The second term is Penalty
+            return (1.0+((1.0-eta_CONST)**N)*penalty_input)*BaseCostG(G) #The second term is Penalty
+#             print 'NOTE THAT COST OF OFFLOADING HAS CHANGED'
+#             return (10.0+((1.0-eta_CONST)**N)*penalty_input)*BaseCostG(G) #The second term is Penalty
             #return 1.0
         else:
             return 0
@@ -203,42 +203,51 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                 return 1
             else: # when act==1
                 return 1.0-np.power((1.0-eta1),n1)
-                
+
     
         def PGQTransProb(g1=0,q1=0, g2=0,q2=0, n1=0,act1=0):  #P^{G,Q}((G,Q),(G',Q') | N,Act)
+            
+            def PoissonFunc(lam,ka):
+                return np.exp(-1.0*lam) * (lam**ka) / factorial(ka,exact=True)
+            
             #1
-            if g1>0 and ESg(g1)==False and g1!=g2 and 0<q1 and q1<(Q_max_CONST-1) and q1<=q2 and q2<(Q_max_CONST-1):
-                return ProbETA(n1,eta_CONST,act1)*PGOnlyTransProb(g1,g2)*np.exp(-1*lam_q_CONST)*np.power(lam_q_CONST,q2-q1)/factorial(q2-q1,exact=True)
+            if g1>0 and (ESg(g1)==False) and g1<=(G_max_CONST-1) and g1!=g2 and 0<q1 and q1<(Q_max_CONST-1) and q1<=q2 and q2<(Q_max_CONST-1):
+                return ProbETA(n1,eta_CONST,act1)*PGOnlyTransProb(g1,g2)*PoissonFunc(lam_q_CONST,q2-q1)
+            
             #2
-            if g1>0 and ESg(g1)==False and g1!=g2 and 0<q1 and q1<(Q_max_CONST-1) and (Q_max_CONST-1)==q2:
+            if g1>0 and (ESg(g1)==False) and g1<=(G_max_CONST-1) and g1!=g2 and 0<q1 and q1<(Q_max_CONST-1) and (Q_max_CONST-1)==q2:
                 sum_tmp = 0.0
                 for k in range(q1,Q_max_CONST-1): #\mathcal{Q},\mathcal{Q}+1,...,(Q_max_CONST-1)-1 (i.e., Q-1)
-                    sum_tmp = sum_tmp + np.exp(-1*lam_q_CONST)*np.power(lam_q_CONST,(k-q1))/factorial((k-q1),exact=True)
-                tmp = ProbETA(n1,eta_CONST,act1)*PGOnlyTransProb(g1,g2)*(1.0-sum_tmp)
-                return tmp
+                    sum_tmp = sum_tmp + PoissonFunc(lam_q_CONST, (k-q1)) 
+                return ProbETA(n1,eta_CONST,act1) * PGOnlyTransProb(g1,g2) * (1.0-sum_tmp)
+
             #3
-            if g1>0 and ESg(g1)==False and g1!=g2 and (Q_max_CONST-1)==q1 and (Q_max_CONST-1)==q2:
-                return ProbETA(n1,eta_CONST,act1)*PGOnlyTransProb(g1,g2)
+            if g1>0 and (ESg(g1)==False) and g1<=(G_max_CONST-1) and g1!=g2 and (Q_max_CONST-1)==q1 and (Q_max_CONST-1)==q2:
+                return ProbETA(n1,eta_CONST,act1) * PGOnlyTransProb(g1,g2)
+            
             #4
-            if g1>0 and g1==g2 and 0<q1 and q1<(Q_max_CONST-1) and q1<=q2 and q2<(Q_max_CONST-1):
-                return (1.0-ProbETA(n1,eta_CONST,act1))*np.exp(-1*lam_q_CONST)*np.power(lam_q_CONST,q2-q1)/factorial(q2-q1,exact=True)
+            if g1>0 and g1==g2 and g1<=(G_max_CONST-1) and 0<q1 and q1<(Q_max_CONST-1) and q1<=q2 and q2<(Q_max_CONST-1):
+                return (1.0 - ProbETA(n1,eta_CONST,act1)) * PoissonFunc(lam_q_CONST, q2-q1)
+            
             #5
-            if g1>0 and g1==g2 and 0<q1 and q1<(Q_max_CONST-1) and (Q_max_CONST-1)==q2:
+            if g1>0 and g1==g2 and g1<=(G_max_CONST-1) and 0<q1 and q1<(Q_max_CONST-1) and (Q_max_CONST-1)==q2:
                 sum_tmp = 0.0
                 for k in range(q1,Q_max_CONST-1):
-                    sum_tmp = sum_tmp + np.exp(-1*lam_q_CONST)*np.power(lam_q_CONST,(k-q1))/factorial((k-q1),exact=True)
-                tmp = (1.0-ProbETA(n1,eta_CONST,act1))*(1.0-sum_tmp)
-                return tmp
+                    sum_tmp = sum_tmp + PoissonFunc(lam_q_CONST, (k-q1)) 
+                return (1.0 - ProbETA(n1,eta_CONST,act1)) * (1.0-sum_tmp)
+            
             #6
-            if g1>0 and g1==g2 and (Q_max_CONST-1)==q1 and (Q_max_CONST-1)==q2:
-                return 1.0-ProbETA(n1,eta_CONST,act1)
+            if g1>0 and g1==g2 and g1<=(G_max_CONST-1) and (Q_max_CONST-1)==q1 and (Q_max_CONST-1)==q2:
+                return 1.0 - ProbETA(n1,eta_CONST,act1)
             
             #7
-            if ESg(g1)==True and 1==q1 and 0==g2 and 0==q2:
+            if (ESg(g1)==True) and 0==g2 and 1==q1 and 0==q2:
                 return ProbETA(n1,eta_CONST,act1)
+            
             #8
-            if ESg(g1)==True and q1>1 and q1<=(Q_max_CONST-1) and 1==g2 and q2==(q1-1):
+            if (ESg(g1)==True) and 1==g2 and q1>1 and q1<=(Q_max_CONST-1) and q2==(q1-1):
                 return ProbETA(n1,eta_CONST,act1)
+            
             #9
             else:
                 return 0
@@ -249,7 +258,7 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
             print "my error signal, out of bound"
             return -1
         else:
-            return PGQTransProb(G1,Q1, G2,Q2, N1,ACT)*PNTransProb(N1,N2)
+            return PGQTransProb(G1,Q1, G2,Q2, N1,ACT) * PNTransProb(N1,N2)
     '''
     =================================================================================================
     END: Functions and definitions
@@ -285,14 +294,13 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
 #                         v_matrix[g1][q1][n1] = cost_inside(g1,q1,n1,0)
         
         k = 1
-        v_s = 0
         v_old = 0
         while 1:
             delta = 0.0
-            stable = True
+            stable = True  # To test if the POLICY is stable in iterations
             for g1 in reversed(range(1,G_max_CONST)):           #
                 for q1 in reversed(range(1,Q_max_CONST)):       # s \in S
-                    for n1 in reversed(range(N_max)):   #
+                    for n1 in reversed(range(N_max)):           #
                         v_old = v_matrix[g1][q1][n1]
                         act_old = act_matrix[g1][q1][n1]
                         # Policy
@@ -302,10 +310,11 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                         tmp_sum_act_1 = 0.0
                         for g2 in range(1,G_max_CONST):            #
                             for q2 in range(1,Q_max_CONST):        # s', a=0/a=1
-                                for n2 in range(N_max):      #
+                                for n2 in range(N_max):            #
                                     tmp_sum_act_0 = tmp_sum_act_0 + PGQNTransProb(g1,q1,n1, g2,q2,n2, 0) * v_matrix[g2][q2][n2]
                                     tmp_sum_act_1 = tmp_sum_act_1 + PGQNTransProb(g1,q1,n1, g2,q2,n2, 1) * v_matrix[g2][q2][n2]
                                     # ########## FOR TEST ##########
+                                    # PRINT THE RECORDS TO FILE
                                     # if g1==2 and q1==1 and n1==1: #########################################################################
                                         # f = open('../runningrecords'+str(g1)+str(q1)+str(n1)+str(lam_q_CONST)+'.txt', 'a')
                                         # f.write('  ROUND %d. lambda_q=%f\n'%(k, lam_q_CONST))
@@ -316,14 +325,18 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                                         # f.write('\n')
                                         # f.close()
                         vsum_act_0 = cost_inside(g1,q1,n1,0) + gamm_CONST * tmp_sum_act_0
-                        vsum_act_1 = cost_inside(g1,q1,n1,1) + gamm_CONST * tmp_sum_act_1        
-                        if vsum_act_0<=vsum_act_1:
+                        vsum_act_1 = cost_inside(g1,q1,n1,1) + gamm_CONST * tmp_sum_act_1
+                        if vsum_act_0 <= vsum_act_1:
                             act = 0
+#                             act_matrix[g1][q1][n1] = 0
                             vsum = vsum_act_0
                         else: # vsum_act_0>vsum_act_1
                             act = 1
+#                             act_matrix[g1][q1][n1] = 1
                             vsum = vsum_act_1
+                        
                         # ########## FOR TEST ##########
+                        # PRINT THE RECORDS TO FILE
                         # if g1==2 and q1==1 and n1==1: #########################################################################
                             # f = open('../runningrecords'+str(g1)+str(q1)+str(n1)+str(lam_q_CONST)+'.txt', 'a')
                             # f.write('ROUND %d. lambda_q=%f\n'%(k, lam_q_CONST))
@@ -333,7 +346,10 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                             # ('ACT=%d TAKEN, vsum=%f'%(act,vsum))
                             # f.write('\n\n')
                             # f.close()
+                        
+                        # --------------------------------------------------------------- 
                         # Special offloading schemes, just for comparisons in experiments
+                        # SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL
                         if actionflag_CONST=='AlwaysLocal':
                             act_matrix[g1][q1][n1] = 0
                             vsum = vsum_act_0
@@ -353,23 +369,31 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                             else:
                                 vsum = vsum_act_0
                         elif actionflag_CONST=='Myopic':
-							if cost_inside(g1,q1,n1,0) <= cost_inside(g1,q1,n1,1):
-								act_matrix[g1][q1][n1] = 0
-								vsum = vsum_act_0
-							else:
-								act_matrix[g1][q1][n1] = 1
-								vsum = vsum_act_1
-                        # END. Special offloading schemes, just for comparisons in experiments    
+                            if cost_inside(g1,q1,n1,0) <= cost_inside(g1,q1,n1,1):
+                                act_matrix[g1][q1][n1] = 0
+                                vsum = vsum_act_0
+                            else:
+                                act_matrix[g1][q1][n1] = 1
+                                vsum = vsum_act_1
+                        # SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL SPECIAL 
+                        # END. Special offloading schemes, just for comparisons in experiments
+                        # --------------------------------------------------------------- 
+                        
                         if 0==g1 or 0==q1:
                             vsum = 0.0
+                            print "The program should not arrive here!"
                             act = 0
+                            # act_matrix[g1][q1][n1] = 0
                         if 0==eta_CONST:
                             act = 0
                             vsum = vsum_act_0
-                            
-                        act_matrix[g1][q1][n1] = act
+                            # act_matrix[g1][q1][n1] = 0
+                        
                         v_matrix[g1][q1][n1] = vsum
+                        act_matrix[g1][q1][n1] = act
+                        
                         # ########## FOR TEST ##########
+                        # PRINT THE RECORDS TO FILE
                         # if g1==2 and q1==1 and n1==1: #########################################################################
                             # f = open('../vmatrix'+str(g1)+str(q1)+str(n1)+str(lam_q_CONST)+'.txt', 'a')
                             # if delta>=np.fabs(vsum-v_old):
@@ -404,7 +428,7 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                         delta = delta if delta>=np.fabs(vsum-v_old) else np.fabs(vsum-v_old)
                         stable = (act == act_old) or stable
                         k = k + 1
-            if delta<0.0001 and stable==True:
+            if delta<0.00001 and (True==stable):
                 return v_matrix, act_matrix
                 
     ############################################################################

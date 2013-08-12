@@ -57,15 +57,14 @@ def ShowActionMatrix(mat,G=-1):
                 for i_q,dim2 in enumerate(dim1):
                     for i_n,elem in enumerate(dim2):
                         if i_g!=0 and i_q!=0:
-                            print 'Q',i_q,' N',i_n,'| ACT',mat[i_g][i_q][i_n]," ",
+                            print '(Q%dN%d Act:) %d   '%(i_q,i_n,mat[i_g][i_q][i_n]),
                     print
                 print
             print
         else:
             # Print the threshold graph for given phase G
             print 'G =', G
-            print 'Q in lines, N in rows:'
             for i_q,dim2 in enumerate(mat[G]):
                 for i_n,elem in enumerate(dim2):
-                    print elem,
+                    print '(Q%dN%d Act:) %d   '%(i_q,i_n,elem),
                 print
