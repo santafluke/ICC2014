@@ -68,3 +68,23 @@ def ShowActionMatrix(mat,G=-1):
                 for i_n,elem in enumerate(dim2):
                     print '(Q%dN%d Act:) %d   '%(i_q,i_n,elem),
                 print
+                
+def ShowValueMatrix(mat,G=-1):
+        if -1==G: #default
+            for i_g,dim1 in enumerate(mat):
+                if i_g!=0:
+                    print 'N=', i_g
+                for i_q,dim2 in enumerate(dim1):
+                    for i_n,elem in enumerate(dim2):
+                        if i_g!=0 and i_q!=0:
+                            print '(Q%dN%d V=) %d   '%(i_q,i_n,mat[i_g][i_q][i_n]),
+                    print
+                print
+            print
+        else:
+            # Print the threshold graph for given phase G
+            print 'N =', G
+            for i_q,dim2 in enumerate(mat[G]):
+                for i_n,elem in enumerate(dim2):
+                    print '(Q%dN%d V=) %d   '%(i_q,i_n,elem),
+                print

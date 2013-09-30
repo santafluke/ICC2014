@@ -83,7 +83,7 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
     tau = 0.05
     velocity = 1.0
     def ETAAvail(v=0.0,R=10.0):
-        return epsilon*(1-3*v*tau/(2*R_clt_CONST))
+        return epsilon*(1-3*v*tau/(R_clt_CONST))
     
     if setEtaDirectly==False:
         eta_CONST = ETAAvail(velocity,R_clt_CONST)
@@ -210,6 +210,10 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
             def PoissonFunc(lam,ka):
                 return np.exp(-1.0*lam) * (lam**ka) / factorial(ka,exact=True)
             
+            #
+            if g1==0 and g2==1 and q1==0 and q2>=q1 and q1<=(Q_max_CONST-1):
+                return PoissonFunc(lam_q_CONST,q2-q1)
+            
             #1
             if g1>0 and (ESg(g1)==False) and g1<=(G_max_CONST-1) and g1!=g2 and 0<q1 and q1<(Q_max_CONST-1) and q1<=q2 and q2<(Q_max_CONST-1):
                 return ProbETA(n1,eta_CONST,act1)*PGOnlyTransProb(g1,g2)*PoissonFunc(lam_q_CONST,q2-q1)
@@ -241,12 +245,36 @@ def MDPOptimization(Q_max_inp=1+6, #[0(dumb), 123456], (Q_max_CONST-1) IS the up
                 return 1.0 - ProbETA(n1,eta_CONST,act1)
             
             #7
-            if (ESg(g1)==True) and 0==g2 and 1==q1 and 0==q2:
-                return ProbETA(n1,eta_CONST,act1)
+#             # WILL BE CHANGED LATER
+#             if (ESg(g1)==True) and 0==g2 and 1==q1 and 0==q2:
+#                 return ProbETA(n1,eta_CONST,act1)
             
             #8
-            if (ESg(g1)==True) and 1==g2 and q1>1 and q1<=(Q_max_CONST-1) and q2==(q1-1):
-                return ProbETA(n1,eta_CONST,act1)
+#             if (ESg(g1)==True) and 1==g2 and q1>1 and q1<=(Q_max_CONST-1) and q2==(q1-1):
+#                 return ProbETA(n1,eta_CONST,act1)
+            
+            
+            #7,8-1
+            if (ESg(g1)==True) and 1==g2 and q1>1 and q1<=(Q_max_CONST-1) and q2>=q1-1 and q2<(Q_max_CONST-1):
+                return ProbETA(n1,eta_CONST,act1) * PoissonFunc(lam_q_CONST,q2-(q1-1))
+            
+            #7,8-1-1
+            if (ESg(g1)==True) and 0==g2 and 1==q1 and q2>=q1-1 and q2<(Q_max_CONST-1):
+                return ProbETA(n1,eta_CONST,act1) * PoissonFunc(lam_q_CONST,q2-(q1-1))
+            
+            #7,8-2
+            if (ESg(g1)==True) and 1==g2 and q1>1 and q1<=(Q_max_CONST-1) and q2==(Q_max_CONST-1):
+                sum_tmp = 0.0
+                for k in range((q1-1),Q_max_CONST-1): #\mathcal{Q},\mathcal{Q}+1,...,(Q_max_CONST-1)-1 (i.e., Q-1)
+                    sum_tmp = sum_tmp + PoissonFunc(lam_q_CONST, (k-(q1-1))) 
+                return ProbETA(n1,eta_CONST,act1) * (1.0-sum_tmp)
+            
+            #7,8-2-1
+            if (ESg(g1)==True) and 0==g2 and 1==q1 and q2==(Q_max_CONST-1):
+                sum_tmp = 0.0
+                for k in range((q1-1),Q_max_CONST-1): #\mathcal{Q},\mathcal{Q}+1,...,(Q_max_CONST-1)-1 (i.e., Q-1)
+                    sum_tmp = sum_tmp + PoissonFunc(lam_q_CONST, (k-(q1-1))) 
+                return ProbETA(n1,eta_CONST,act1) * (1.0-sum_tmp)
             
             #9
             else:

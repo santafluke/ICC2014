@@ -36,4 +36,8 @@ from Headers import *
 
 # FAILED CASE TOO
 v_mat, a_mat = MDPOptimization(lam_q_inp=0.25,penalty_input=15.0,gamm_inp=0.7,setEtaDirectly = True, eta_inp = 0.9)
-ShowActionMatrix(a_mat)
+ShowValueMatrix(v_mat,0)
+
+ShowValueMatrix(v_mat,1)
+
+ShowValueMatrix(v_mat,2)
